@@ -1,4 +1,4 @@
-from utils import safely_load_json
+from nlputilities.utils import safely_load_json
 from string import punctuation, digits
 
 

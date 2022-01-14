@@ -11,8 +11,8 @@ import os.path
 import pickle
 import re
 import sys
-from NLPCore.symSpellHelper import DistanceAlgorithm, EditDistance
-import NLPCore.symSpellHelper as helpers
+from nlputilities.NLPCore.symSpellHelper import DistanceAlgorithm, EditDistance
+import nlputilities.NLPCore.symSpellHelper as helpers
 
 
 class Verbosity(Enum):

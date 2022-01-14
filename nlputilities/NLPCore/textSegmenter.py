@@ -5,7 +5,7 @@ import json
 import os
 from typing import Union, Dict
 
-from utils import safely_load_json
+from nlputilities.utils import safely_load_json
 
 """
 The Segmenter Class implements the Viterbi algorithm for word segmentation.

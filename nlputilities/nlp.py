@@ -1,20 +1,20 @@
-import json
-import re
 from functools import reduce
 import logging
 import os
-from string import digits, punctuation
-
-import nltk
+from nltk import SnowballStemmer
 import spacy
 import subprocess
 from collections import OrderedDict
-from utils import safely_load_json
-from NLPCore.symSpellImplementation import SpellChecker, Verbosity
-from NLPCore.textSegmenter import Segmenter
-from NLPCore.phraseChecker import PhraseChecker
+
+from typing import Any, List, Tuple, Union
+
+from nlputilities.utils import safely_load_json
+from nlputilities.NLPCore.symSpellImplementation import SpellChecker, Verbosity
+from nlputilities.NLPCore.textSegmenter import Segmenter
+from nlputilities.NLPCore.phraseChecker import PhraseChecker
 
 logger = logging.getLogger(__name__)
+__version__ = "0.8.0"
 
 ONE_GRAMS_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/1grams_corpus.json"
 if not os.path.exists(ONE_GRAMS_CORPUS):
@@ -45,15 +45,15 @@ VERBS_CORPUS = __file__[:__file__.rfind("/")] + "NLPCorpi/verbs.txt"
 
 
 class NLPUtilities:
-    segmenter = None
-    spell_checker = None
-    phrase_checker = None
-    abbreviations_dictionary = None
-    contractions_dictionary = None
-    lemmetizer = None
-    stemmer = None
-    spacy = None
-    verbs = None
+    segmenter: Union[Segmenter, None] = None
+    spell_checker: Union[SpellChecker, None] = None
+    phrase_checker: Union[PhraseChecker, None] = None
+    abbreviations_dictionary: Union[dict, None] = None
+    contractions_dictionary: Union[dict, None] = None
+    lemmetizer: Union[Any, None] = None
+    stemmer: Union[Any, None] = None
+    spacy: Union[Any, None] = None
+    verbs: Union[list, None] = None
 
     @staticmethod
     def initialize_segmenter(monograms: str=ONE_GRAMS_CORPUS, bigrams: str=TWO_GRAMS_CORPUS) -> Segmenter:
@@ -88,7 +88,7 @@ class NLPUtilities:
         return NLPUtilities.contractions_dictionary
 
     @staticmethod
-    def initialize_verbs(verbs: str=VERBS_CORPUS):
+    def initialize_verbs(verbs: str=VERBS_CORPUS) -> list:
         if NLPUtilities.verbs is None:
             try:
                 with open(verbs, "r") as fp:
@@ -98,19 +98,9 @@ class NLPUtilities:
         return NLPUtilities.verbs
 
     @staticmethod
-    def initialize_lemmetizer():
-        # Download needed corpora, if not already available
-        if NLPUtilities.lemmetizer is None:
-            nltk.download("punkt")
-            nltk.download('averaged_perceptron_tagger')
-            nltk.download("wordnet")
-            NLPUtilities.lemmetizer = nltk.WordNetLemmatizer()
-        return NLPUtilities.lemmetizer
-
-    @staticmethod
     def initialize_stemmer():
         if NLPUtilities.stemmer is None:
-            NLPUtilities.stemmer = nltk.PorterStemmer()
+            NLPUtilities.stemmer = SnowballStemmer("english")
         return NLPUtilities.stemmer
 
     @staticmethod
@@ -125,7 +115,7 @@ class NLPUtilities:
                                       stdout=subprocess.DEVNULL,
                                       shell=True)
                 if temp.stderr != "":
-                    subprocess.run("python3.7 -m spacy download en_core_web_sm",
+                    subprocess.run("python3.8 -m spacy download en_core_web_sm",
                                    stderr=subprocess.DEVNULL,
                                    stdout=subprocess.DEVNULL,
                                    shell=True)
@@ -140,18 +130,27 @@ class NLPUtilities:
         NLPUtilities.initialize_phrase_checker()
         NLPUtilities.initialize_abbreviations()
         NLPUtilities.initialize_contractions()
-        NLPUtilities.initialize_lemmetizer()
         NLPUtilities.initialize_stemmer()
         NLPUtilities.initialize_spacy()
         NLPUtilities.initialize_verbs()
 
     @staticmethod
-    def use_segmenter(phrase: str) -> str:
+    def use_segmenter(phrase: Union[str, List]) -> str:
+        """"""
         segment = NLPUtilities.initialize_segmenter()
         check = NLPUtilities.initialize_spell_checker()
-        phrase = phrase.translate(str.maketrans("", "", "-_. ")).lower()
-        phrases = [phrase]
         final = ""
+
+        if isinstance(phrase, str):
+            phrase = phrase.translate(str.maketrans("", "", "-_ ")).lower()
+            phrases = phrase.split(".")
+
+        elif isinstance(phrase, list):
+            phrase = [phr.translate(str.maketrans("", "", "-_ ")).lower() for phr in phrase]
+            phrases = phrase
+
+        else:
+            return str(phrase)
 
         for sub_phrase in phrases:
             try:
@@ -228,23 +227,16 @@ class NLPUtilities:
 
     @staticmethod
     def use_lemmetizer(phrase: str) -> str:
-        """Lemmetize a phrase using nltk. The result is the lemmetized phrase without the punctuation"""
-        lemmetizer = NLPUtilities.initialize_lemmetizer()
+        """Lemmetize a phrase using spacy. The result is the lemmetized phrase without the punctuation"""
         # Remove punctuation
         phrase = phrase.translate(str.maketrans("", "", ".!\"#$%&\'()*+,-/:;<=>?@[\\]^_`{|}~"))
         # tokenize the sentence and find the POS tag for each token
-        nltk_tagged = nltk.pos_tag(nltk.word_tokenize(phrase))
-        # tuple of (token, wordnet_tag)
-        wordnet_tagged = map(lambda x: (x[0], NLPUtilities.nltk_tag_to_wordnet_tag(x[1])), nltk_tagged)
-        lemmatized_sentence = []
-        for word, tag in wordnet_tagged:
-            if tag is None:
-                # if there is no available tag, append the token as is
-                lemmatized_sentence.append(word)
-            else:
-                # else use the tag to lemmatize the token
-                lemmatized_sentence.append(lemmetizer.lemmatize(word, tag))
-        return " ".join(lemmatized_sentence)
+        lemmetizer = NLPUtilities.initialize_spacy()
+        tokenized = lemmetizer(phrase)
+        result = []
+        for word in tokenized:
+            result.append(word.lemma_ if word.lemma_ != word.text.lower() else word.text)
+        return " ".join(result)
 
     @staticmethod
     def check_abbreviation(word: str) -> str:
@@ -367,27 +359,14 @@ class NLPUtilities:
                                  "suggested_word": score_word[elem]["corrected_word"]})
 
             word_result = {"name": word,
-                           "english_score": str(result_english_score),
-                           "separator_score": str(result_separator_score),
+                           "english_score": round(float(str(result_english_score)), 2),
+                           "separator_score": round(float(str(result_separator_score)), 2),
                            "sub_words": subwords,
                            "final_score": final_score}
 
             result.append(word_result)
 
         return result
-
-    @staticmethod
-    def nltk_tag_to_wordnet_tag(nltk_tag):
-        if nltk_tag.startswith('J'):
-            return nltk.corpus.wordnet.ADJ
-        elif nltk_tag.startswith('V'):
-            return nltk.corpus.wordnet.VERB
-        elif nltk_tag.startswith('N'):
-            return nltk.corpus.wordnet.NOUN
-        elif nltk_tag.startswith('R'):
-            return nltk.corpus.wordnet.ADV
-        else:
-            return None
 
     @staticmethod
     def input_vectorization(score_word: str, original_word="") -> list:
@@ -483,89 +462,12 @@ class NLPUtilities:
         return score
 
     @staticmethod
-    def ngrams_maker(source_path: str, n_grams: int=3, corpus_path: str="", lemmetize: bool=False, expand_contraction: bool=False) -> bool:
-        nltk.download("wordnet")
-        lines = ""
-        result = {}
-
-        if os.path.exists(source_path):
-            with open(source_path, "r") as fp:
-                lines = fp.read()
-        else:
-            return False
-
-        if not corpus_path:
-            corpus_path = str(n_grams) + "grams_corpus"
-
-        if os.path.exists(f"{corpus_path}.json"):
-            with open(f"{corpus_path}.json", "r") as fp:
-                result = json.load(fp)
-
-        n = 0
-        for phrase in lines.split("."):
-            if n % 10000 == 0:
-                print("" + str(n) + " phrases computed")
-            temp = []
-            for word in phrase.split():
-
-                cleaned = word.translate(str.maketrans("", "", digits + punctuation.replace("'", "") + "♞♟")) \
-                    .lower() \
-                    .strip()
-
-                regrex_pattern = re.compile(pattern="["
-                                                    u"\U0001F600-\U0001F64F"  # emoticons
-                                                    u"\U0001F300-\U0001F5FF"  # symbols & pictographs
-                                                    u"\U0001F680-\U0001F6FF"  # transport & map symbols
-                                                    u"\U0001F1E0-\U0001F1FF"  # flags (iOS)
-                                                    "]+", flags=re.UNICODE)
-                cleaned = regrex_pattern.sub(r'', cleaned)
-
-                if lemmetize:
-                    lemm = nltk.WordNetLemmatizer()
-                    cleaned = lemm.lemmatize(lemm.lemmatize(lemm.lemmatize(cleaned, pos="n"), pos="v"), pos="a")
-
-                if len(cleaned) == 0:
-                    continue
-
-                elif expand_contraction and cleaned in NLPUtilities.contractions:
-                    for elem in NLPUtilities.contractions[cleaned].split():
-                        temp.append(elem)
-
-                else:
-                    if cleaned[0] == "'":
-                        cleaned = cleaned[1:]
-                    try:
-                        if cleaned[-1] == "'":
-                            cleaned = cleaned[:-1]
-                    except IndexError:
-                        continue
-                    temp.append(cleaned)
-                    
-            if len(temp) > 0:
-                freq = nltk.FreqDist(nltk.ngrams(temp, n_grams))
-                for elem in freq:
-                    te = "_".join(elem)
-                    if te in result:
-                        result[te] = result[te] + freq[elem]
-                    else:
-                        result[te] = freq[elem]
-            n = n + 1
-        #
-        # gram = []
-        # for phrase in sent:
-        #     gram.append(FreqDist(ngrams(phrase, GRAMS_NUMBER)))
-        #
-        # res = {}
-        # for elem in gram:
-        #     for p in elem:
-        #         te = "_".join(p)
-        #         if te in res:
-        #             res[te] = res[te] + elem[p]
-        #         else:
-        #             res[te] = elem[p]
-        with open(f"{corpus_path}.json", "w") as fp:
-            json.dump(result, fp)
-            print(f"N-GRAM CORPUS CREATED: {corpus_path}.json")
-
-if __name__ == "__main__":
-    NLPUtilities.ngrams_maker("NLPCorpi/Fellowship_of_the_Ring.txt", n_grams=2)
+    def get_pos_tags(tokens: List[str, ]) -> Tuple[List[dict, ], List[str, ]]:
+        """
+        Returns lists of pos-tagged tokens. Based on spaCy-pos-tagger.
+        """
+        spacy = NLPUtilities.initialize_spacy()
+        doc = spacy(" ".join(tokens))
+        pos_tagged_tokens = [{"token": w.text, "tag": w.tag_} for w in doc]
+        pos_tags = [w.tag_ for w in doc]
+        return pos_tagged_tokens, pos_tags
