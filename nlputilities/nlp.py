@@ -1,6 +1,5 @@
 from functools import reduce
 import logging
-import os
 from nltk import SnowballStemmer
 import spacy
 import subprocess
@@ -14,33 +13,14 @@ from nlputilities.NLPCore.textSegmenter import Segmenter
 from nlputilities.NLPCore.phraseChecker import PhraseChecker
 
 logger = logging.getLogger(__name__)
-__version__ = "0.8.0"
+__version__ = "1.0.0"
 
 ONE_GRAMS_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/1grams_corpus.json"
-if not os.path.exists(ONE_GRAMS_CORPUS):
-    ONE_GRAMS_CORPUS = os.path.abspath("") + "/functionalities/sharedFunctionalities/NLPCorpi/1grams_corpus.json"
-
 TWO_GRAMS_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/2grams_corpus.json"
-if not os.path.exists(TWO_GRAMS_CORPUS):
-    TWO_GRAMS_CORPUS = os.path.abspath("") + "/functionalities/sharedFunctionalities/NLPCorpi/2grams_corpus.json"
-
 THREE_GRAMS_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/3grams_corpus.json"
-if not os.path.exists(THREE_GRAMS_CORPUS):
-    THREE_GRAMS_CORPUS = os.path.abspath("") + "/functionalities/sharedFunctionalities/NLPCorpi/3grams_corpus.json"
-
 SYMSPELL_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/spell_checker_corpus.txt"
-if not os.path.exists(SYMSPELL_CORPUS):
-    print(SYMSPELL_CORPUS)
-    SYMSPELL_CORPUS = os.path.abspath("") + "/functionalities/sharedFunctionalities/NLPCorpi/spell_checker_corpus.txt"
-
 ABBREVIATIONS_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/abbreviations.json"
-if not os.path.exists(ABBREVIATIONS_CORPUS):
-    ABBREVIATIONS_CORPUS = os.path.abspath("") + "/functionalities/sharedFunctionalities/NLPCorpi/abbreviations.json"
-
 CONTRACTIONS_CORPUS = __file__[:__file__.rfind("/")] + "/NLPCorpi/contractions.json"
-if not os.path.exists(CONTRACTIONS_CORPUS):
-    CONTRACTIONS_CORPUS = os.path.abspath("") + "/functionalities/sharedFunctionalities/NLPCorpi/contractions.json"
-
 VERBS_CORPUS = __file__[:__file__.rfind("/")] + "NLPCorpi/verbs.txt"
 
 

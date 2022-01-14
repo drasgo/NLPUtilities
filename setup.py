@@ -28,6 +28,7 @@ setup(
                 "phrase checker, creation of N-grams corpi, etc",
     install_requires=install_requires,
     packages=find_packages(),
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: Proprietary",
