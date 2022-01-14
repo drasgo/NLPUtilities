@@ -138,17 +138,17 @@ def make_corpus(source_file: str=SOURCE_TEXT_PATH, grams_number: int=GRAMS_NUMBE
     lines = ""
     result = {}
 
-    if os.path.exists(SOURCE_TEXT_PATH):
-        with open(SOURCE_TEXT_PATH, "r") as fp:
+    if os.path.exists(source_file):
+        with open(source_file, "r") as fp:
             lines = fp.read()
     else:
-        print("Source file doesn't exist: " + SOURCE_TEXT_PATH + ". Exiting")
+        print("Source file doesn't exist: " + source_file + ". Exiting")
         exit()
 
-    if os.path.exists(CORPUS_NAME):
-        with open(CORPUS_NAME, "r") as fp:
+    if os.path.exists(corpus_name):
+        with open(corpus_name, "r") as fp:
             result = json.load(fp)
-            print("Loaded previous " + str(GRAMS_NUMBER) + " corpus: " + CORPUS_NAME)
+            print("Loaded previous " + str(grams_number) + " corpus: " + corpus_name)
 
     n = 0
     for phrase in lines.split("."):
@@ -195,7 +195,7 @@ def make_corpus(source_file: str=SOURCE_TEXT_PATH, grams_number: int=GRAMS_NUMBE
                     continue
                 temp.append(cleaned)
         if len(temp) > 0:
-            freq = FreqDist(ngrams(temp, GRAMS_NUMBER))
+            freq = FreqDist(ngrams(temp, grams_number))
             for elem in freq:
                 te = "_".join(elem)
                 if te in result:
@@ -204,9 +204,9 @@ def make_corpus(source_file: str=SOURCE_TEXT_PATH, grams_number: int=GRAMS_NUMBE
                     result[te] = freq[elem]
             # sent.append(temp)
         n = n + 1
-    with open(CORPUS_NAME, "w") as fp:
+    with open(corpus_name, "w") as fp:
         json.dump(result, fp)
-        print("N-GRAM CORPUS CREATED: " + CORPUS_NAME)
+        print("N-GRAM CORPUS CREATED: " + corpus_name)
 
 
 if __name__ == "__main__":
